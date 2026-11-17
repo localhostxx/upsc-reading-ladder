@@ -1,0 +1,837 @@
+<!doctype html>
+<html lang="en" class="locked">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The reading ladder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;0,7..72,700;1,7..72,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #EDF0F3;
+  --surface: #F8FAFB;
+  --ink: #1C2541;
+  --muted: #586079;
+  --rule: #CDD3DC;
+  --accent: #2D4FD6;
+  --hl: #FFE066;
+  --hl-ink: #1C2541;
+  --hl-h: 62%;
+  --err: #B3261E;
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121624;
+    --surface: #191E30;
+    --ink: #E4E7F0;
+    --muted: #9AA2B8;
+    --rule: #2B3249;
+    --accent: #8EA4FF;
+    --hl: rgba(255, 214, 64, 0.85);
+    --hl-ink: #121624;
+    --hl-h: 100%;
+    --err: #FF8A80;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121624;
+  --surface: #191E30;
+  --ink: #E4E7F0;
+  --muted: #9AA2B8;
+  --rule: #2B3249;
+  --accent: #8EA4FF;
+  --hl: rgba(255, 214, 64, 0.85);
+  --hl-ink: #121624;
+  --hl-h: 100%;
+  --err: #FF8A80;
+  color-scheme: dark;
+}
+html { scroll-padding-top: env(safe-area-inset-top, 0px); background: var(--bg); }
+*, *::before, *::after { box-sizing: inherit; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16.5px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 720px; margin: 0 auto; padding: 48px 20px 96px; }
+.serif { font-family: "Literata", Georgia, "Times New Roman", serif; }
+
+/* Header */
+h1 {
+  font-family: "Literata", Georgia, serif;
+  font-weight: 700;
+  font-size: clamp(2.3rem, 7vw, 3.4rem);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  margin: 0 0 16px;
+}
+.lede { font-size: 1.08rem; color: var(--muted); max-width: 34em; margin: 0 0 28px; }
+.overall { margin: 0 0 18px; }
+.overall-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin-bottom: 8px; }
+.overall-count { font-family: "Literata", Georgia, serif; font-size: 1.35rem; font-weight: 600; }
+.where { color: var(--accent); font-weight: 700; font-size: 0.95rem; }
+.bar { height: 8px; border-radius: 4px; background: var(--rule); overflow: hidden; }
+.bar span { display: block; height: 100%; width: 0; background: var(--ink); transition: width .5s ease; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 20px; margin: 18px 0 8px; }
+.switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 700; font-size: 0.95rem; }
+.switch input { appearance: none; -webkit-appearance: none; width: 40px; height: 24px; border-radius: 12px; background: var(--rule); position: relative; margin: 0; cursor: pointer; transition: background .2s; }
+.switch input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--surface); transition: transform .2s; }
+.switch input:checked { background: var(--ink); }
+.switch input:checked::after { transform: translateX(16px); }
+.sync { font-size: 0.85rem; color: var(--muted); }
+.sync-wrap { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; }
+.edit { font-size: 0.9rem; font-weight: 700; color: var(--accent); text-underline-offset: 3px; }
+.edit[hidden] { display: none; }
+.tick:disabled { cursor: default; }
+.how { margin: 14px 0 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.how summary { cursor: pointer; padding: 12px 0; font-weight: 700; list-style-position: inside; }
+.how ul { margin: 0 0 16px; padding-left: 1.2em; }
+.how li { margin: 0 0 8px; }
+
+/* Ladder */
+main { margin-top: 44px; }
+.level, .milestone { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 20px; }
+.spine { position: relative; display: flex; justify-content: center; }
+.spine::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; transform: translateX(-50%); background: var(--rule); }
+.level:first-child .spine::before { top: 22px; }
+.level.done .spine::before { background: var(--ink); }
+.num {
+  position: relative; z-index: 1; margin-top: 2px;
+  width: 44px; height: 44px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--ink); background: var(--bg); color: var(--ink);
+  font-family: "Literata", Georgia, serif; font-weight: 700; font-size: 1.2rem;
+}
+.level.done .num { background: var(--ink); color: var(--bg); }
+.level.current .num { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 18%, transparent); }
+.level .body { padding-bottom: 56px; min-width: 0; }
+.here { display: none; margin: 0 0 4px; color: var(--accent); font-weight: 700; font-size: 0.9rem; }
+.level.current .here { display: block; }
+h2 { font-family: "Literata", Georgia, serif; font-weight: 700; font-size: 1.75rem; line-height: 1.15; margin: 6px 0 4px; letter-spacing: -0.01em; }
+.when { margin: 0 0 12px; color: var(--muted); font-weight: 700; font-size: 0.95rem; }
+.goal { margin: 0 0 10px; max-width: 36em; }
+.lvl-progress { margin: 0 0 8px; font-size: 0.9rem; color: var(--muted); }
+
+.books { list-style: none; margin: 0; padding: 0; }
+.book { display: grid; grid-template-columns: 28px minmax(0, 1fr); column-gap: 14px; padding: 18px 0; border-top: 1px solid var(--rule); }
+body.hide-bonus .book[data-bonus="1"] { display: none; }
+.tick {
+  appearance: none; -webkit-appearance: none; margin: 3px 0 0;
+  width: 26px; height: 26px; border-radius: 6px;
+  border: 2px solid var(--ink); background: var(--surface);
+  cursor: pointer; position: relative; flex: none;
+}
+.tick:checked { background: var(--ink); }
+.tick:checked::after {
+  content: ""; position: absolute; left: 7px; top: 2px; width: 7px; height: 13px;
+  border: solid var(--bg); border-width: 0 3px 3px 0; transform: rotate(45deg);
+}
+.tick:focus-visible, .switch input:focus-visible, summary:focus-visible, textarea:focus-visible {
+  outline: 3px solid var(--accent); outline-offset: 2px;
+}
+.titleline { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.title { font-family: "Literata", Georgia, serif; font-weight: 600; font-size: 1.2rem; line-height: 1.3; }
+.title .t {
+  background-image: linear-gradient(var(--hl), var(--hl));
+  background-repeat: no-repeat;
+  background-size: 0% var(--hl-h);
+  background-position: 0 85%;
+  transition: background-size .45s ease, color .2s;
+  padding: 0 3px; margin: 0 -3px;
+  -webkit-box-decoration-break: clone; box-decoration-break: clone;
+}
+.book.done .title .t { background-size: 100% var(--hl-h); color: var(--hl-ink); }
+.bonus { font-size: 0.78rem; font-weight: 700; color: var(--muted); border: 1px solid var(--rule); border-radius: 999px; padding: 1px 9px; }
+.author { margin: 2px 0 6px; color: var(--muted); font-size: 0.95rem; }
+.why { margin: 0 0 6px; }
+.helps { margin: 0; font-size: 0.88rem; color: var(--muted); }
+.meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; margin-top: 8px; }
+.fin { font-size: 0.85rem; color: var(--accent); font-weight: 700; }
+.fin:empty { display: none; }
+.note summary { cursor: pointer; font-size: 0.88rem; font-weight: 700; color: var(--ink); text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 3px; list-style: none; }
+.note summary::-webkit-details-marker { display: none; }
+.note[open] { flex-basis: 100%; }
+.note textarea {
+  display: block; box-sizing: border-box; width: 100%; max-width: 100%; margin-top: 8px; min-height: 76px; resize: vertical;
+  font: inherit; font-size: 0.95rem; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--rule); border-radius: 6px; padding: 10px 12px;
+}
+
+.routine { margin-top: 10px; padding: 16px 18px; background: var(--surface); border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0; }
+.routine h3 { margin: 0 0 10px; font-family: "Literata", Georgia, serif; font-size: 1.05rem; font-weight: 700; }
+.routine ul { list-style: none; margin: 0; padding: 0; }
+.routine li { display: grid; grid-template-columns: 26px minmax(0, 1fr); column-gap: 12px; align-items: start; padding: 6px 0; }
+.routine .tick { width: 22px; height: 22px; margin-top: 2px; border-radius: 5px; }
+.routine .tick:checked::after { left: 6px; top: 2px; width: 6px; height: 11px; }
+.routine label { cursor: pointer; }
+.routine li.done label { color: var(--muted); }
+.routine .fin { display: block; font-size: 0.8rem; }
+
+.milestone .spine .diamond {
+  position: relative; z-index: 1; width: 16px; height: 16px; margin-top: 6px;
+  background: var(--bg); border: 2px solid var(--accent); transform: rotate(45deg);
+}
+.milestone .body { padding-bottom: 36px; }
+.milestone p { margin: 0; font-size: 1rem; }
+.milestone strong { font-family: "Literata", Georgia, serif; font-size: 1.15rem; }
+.milestone .sub { color: var(--muted); font-size: 0.9rem; }
+.milestone.last .spine::before { bottom: auto; height: 10px; }
+
+footer { margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--rule); font-size: 0.85rem; color: var(--muted); }
+footer p { margin: 0 0 8px; }
+
+
+/* Password gate */
+html.locked, html.locked body { height: 100%; }
+html.locked .wrap { display: none; }
+html:not(.locked) .gate { display: none; }
+.gate { min-height: 100%; display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
+.gate-box { width: 100%; max-width: 420px; }
+.gate-title { font-family: "Literata", Georgia, serif; font-weight: 700; font-size: clamp(2rem, 6vw, 2.6rem); line-height: 1.05; letter-spacing: -0.02em; margin: 0 0 14px; }
+.gate p { margin: 0 0 10px; }
+.gate label { display: block; font-weight: 700; font-size: 0.95rem; margin: 16px 0 6px; }
+.gate input[type="password"] { display: block; box-sizing: border-box; width: 100%; font: inherit; padding: 12px 14px; border: 2px solid var(--ink); border-radius: 8px; background: var(--surface); color: var(--ink); }
+.gate .remember { display: flex; align-items: center; gap: 10px; font-weight: 400; margin-top: 14px; cursor: pointer; }
+.gate .remember input { width: 18px; height: 18px; accent-color: var(--ink); margin: 0; }
+.gate button { margin-top: 18px; font: inherit; font-weight: 700; padding: 12px 22px; border-radius: 8px; border: 0; background: var(--ink); color: var(--bg); cursor: pointer; }
+.gate button:focus-visible, .gate input:focus-visible, .linkbtn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.gate .err { color: var(--err); font-weight: 700; font-size: 0.95rem; margin-top: 12px; min-height: 1.4em; }
+.gate ol { padding-left: 1.3em; margin: 8px 0 12px; }
+.gate ol li { margin-bottom: 6px; }
+.gate a { color: var(--accent); text-underline-offset: 3px; }
+#hash-out { display: block; word-break: break-all; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 0.82rem; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 10px 12px; margin: 12px 0 0; }
+.gate .hint { color: var(--muted); font-size: 0.88rem; margin-top: 16px; }
+.linkbtn { font: inherit; font-size: 0.9rem; font-weight: 700; color: var(--muted); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.linkbtn[hidden] { display: none; }
+
+@media (max-width: 520px) {
+  .wrap { padding-top: 32px; }
+  .level, .milestone { grid-template-columns: 34px minmax(0, 1fr); column-gap: 14px; }
+  .num { width: 34px; height: 34px; font-size: 1rem; }
+  .level:first-child .spine::before { top: 18px; }
+  h2 { font-size: 1.5rem; }
+  .routine { padding: 14px 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .title .t, .bar span, .switch input, .switch input::after { transition: none; }
+}
+</style>
+</head>
+<body>
+<div class="gate" id="gate">
+  <div class="gate-box">
+    <h1 class="gate-title">The reading ladder</h1>
+    <p id="gate-loading">Checking the lock…</p>
+
+    <form id="unlock-form" hidden>
+      <p>This page is private. Enter the password to open it.</p>
+      <label for="pw">Password</label>
+      <input type="password" id="pw" autocomplete="current-password" required>
+      <label class="remember"><input type="checkbox" id="remember" checked> Remember on this device</label>
+      <button type="submit">Unlock</button>
+      <p class="err" id="pw-err" role="alert"></p>
+    </form>
+
+    <form id="setup-form" hidden>
+      <p>Choose a password for this page. You save it in your repo once, and after that everyone who opens the page will need it.</p>
+      <label for="pw1">New password</label>
+      <input type="password" id="pw1" autocomplete="new-password" minlength="4" required>
+      <label for="pw2">Type it again</label>
+      <input type="password" id="pw2" autocomplete="new-password" required>
+      <button type="submit">Create password</button>
+      <p class="err" id="setup-err" role="alert"></p>
+    </form>
+
+    <div id="setup-done" hidden>
+      <p>Almost done. Save this code in your repo:</p>
+      <ol>
+        <li>Open <a id="hash-edit-link" target="_blank" rel="noopener">password-hash.txt</a> in your repo and click the pencil icon.</li>
+        <li>Paste the code as the only line in the file and commit.</li>
+        <li>Wait two or three minutes, then reload this page.</li>
+      </ol>
+      <code id="hash-out"></code>
+      <button type="button" id="copy-hash">Copy code</button>
+      <p class="hint">The code is a scrambled form of your password, so it’s fine to save it in the repo. Remember the password itself: it can’t be worked back out of the code.</p>
+    </div>
+  </div>
+</div>
+<div class="wrap">
+  <header>
+    <h1>The reading ladder</h1>
+    <p class="lede">From your first finished book to the interview room. Start at level 1, climb one level at a time, and let each level make the next one easier.</p>
+    <div class="overall">
+      <div class="overall-row">
+        <span><span class="overall-count" id="overall-count">0 of 0</span> core books read</span>
+        <span class="where" id="where"></span>
+      </div>
+      <div class="bar" aria-hidden="true"><span id="overall-bar"></span></div>
+    </div>
+    <div class="controls">
+      <label class="switch"><input type="checkbox" id="show-bonus" checked><span>Show bonus books</span></label>
+      <span class="sync-wrap"><span class="sync" id="sync" role="status">Saved in this browser</span>
+      <a class="edit" id="edit-link" hidden target="_blank" rel="noopener">Tick books on GitHub</a>
+      <button type="button" class="linkbtn" id="lock-btn" hidden>Lock</button></span>
+    </div>
+    <details class="how">
+      <summary>How to use this list</summary>
+      <ul>
+        <li>Go top to bottom. Core books are the ladder; bonus books are extras for when a level is going well.</li>
+        <li>If a book bores you after 50 pages, move to the next one. Forcing yourself through it is how reading habits die.</li>
+        <li>When you finish a book, tick it in README.md on GitHub (the “Tick books on GitHub” link opens it). Add a note under it for the one thing worth remembering. By 2028 those notes are your bank of examples for Essay and Ethics.</li>
+        <li>The newspaper starts at level 1 and never stops. Each level adds one more thing to your daily reading.</li>
+        <li>Dates are a guide. If you finish a level early, climb early.</li>
+      </ul>
+    </details>
+  </header>
+
+  <main id="ladder"></main>
+
+  <footer>
+    <p>On GitHub Pages, this page reads your ticks and notes from README.md in the repo, so it shows the same progress on every device. Changes can take a few minutes to appear. Opened as a file on your computer, it saves ticks in that browser instead.</p>
+    <p>Exam dates for 2028 are estimates from UPSC’s usual calendar. Check upsc.gov.in once the 2028 calendar is out.</p>
+  </footer>
+</div>
+
+<script>
+const LEVELS = [
+  {
+    n: 1, name: "Get hooked", when: "November 2026 to February 2027",
+    goal: "One job only: finish books. These are short and read like stories. Fifteen to twenty pages a day, at the same time every day.",
+    books: [
+      { id: "wings", t: "Wings of Fire", a: "A.P.J. Abdul Kalam with Arun Tiwari", w: "A boy from Rameswaram who ends up leading India’s missile programme. Simple language, under 200 pages.", h: ["Science and Tech", "Ethics"] },
+      { id: "malgudi", t: "Malgudi Days", a: "R.K. Narayan", w: "Short stories set in a small South Indian town. One story per sitting is the easiest way to build a daily habit.", h: ["Indian society", "Essay"] },
+      { id: "animalfarm", t: "Animal Farm", a: "George Orwell", w: "About 100 pages. Farm animals overthrow their owner, and slowly the new rulers become the old ones.", h: ["Polity", "Ethics", "Essay"] },
+      { id: "train", t: "Train to Pakistan", a: "Khushwant Singh", w: "A Punjab village in the summer of 1947. You’ll feel Partition instead of just memorising it.", h: ["Modern History", "Society"] },
+      { id: "frankl", t: "Man’s Search for Meaning", a: "Viktor Frankl", w: "A psychiatrist on surviving Nazi camps and why a sense of purpose keeps people alive. About 150 pages.", h: ["Ethics", "Essay"] },
+      { id: "kurien", t: "I Too Had a Dream", a: "Verghese Kurien", w: "How Amul and the White Revolution were built through farmer cooperatives. A blueprint for what one stubborn public servant can do.", h: ["Agriculture", "Economy", "Interview"] },
+      { id: "freak", t: "Freakonomics", a: "Steven Levitt and Stephen Dubner", w: "Odd questions answered with data. It teaches you to think about incentives, which is half of public policy.", h: ["Economy", "Essay"], bonus: true }
+    ],
+    routine: [
+      { id: "r1a", t: "A newspaper for 20 minutes a day: the front page plus one explainer from The Indian Express or The Hindu." },
+      { id: "r1b", t: "A notebook, or the note box under each book: one line per chapter, a fact, a story or a quote." }
+    ]
+  },
+  {
+    n: 2, name: "Curious reader", when: "March to August 2027",
+    goal: "Popular non-fiction. Bigger ideas, still written to be enjoyed. Aim for one or two books a month.",
+    books: [
+      { id: "bryson", t: "A Short History of Nearly Everything", a: "Bill Bryson", w: "Physics, geology, biology and chemistry told as funny stories about the people who figured them out.", h: ["Science and Tech", "Geography"] },
+      { id: "prisoners", t: "Prisoners of Geography", a: "Tim Marshall", w: "Why mountains, rivers and seas decide what countries fear and want. Includes chapters on India, Pakistan and China.", h: ["Geography", "International Relations"] },
+      { id: "boo", t: "Behind the Beautiful Forevers", a: "Katherine Boo", w: "Reads like a novel, but every page is reported fact from a Mumbai slum beside the airport.", h: ["Society", "Governance", "Urbanisation"] },
+      { id: "factfulness", t: "Factfulness", a: "Hans Rosling", w: "Data showing the world is better, and worse, than you think. Trains you to argue with numbers instead of impressions.", h: ["Essay", "Development"] },
+      { id: "freedom", t: "Freedom at Midnight", a: "Larry Collins and Dominique Lapierre", w: "1947 written like a thriller. Historians say it leans on Mountbatten’s view, so enjoy it as a story, not the final word.", h: ["Modern History"] },
+      { id: "sapiens", t: "Sapiens", a: "Yuval Noah Harari", w: "All of human history in one sweep: farming, money, religion, empires. Endless material for the Essay paper.", h: ["Essay", "World History"] },
+      { id: "poorecon", t: "Poor Economics", a: "Abhijit Banerjee and Esther Duflo", w: "How poor families really decide about food, health and school, by two Nobel-winning economists.", h: ["Economy", "Social Justice"] },
+      { id: "sainath", t: "Everybody Loves a Good Drought", a: "P. Sainath", w: "Ground reports from India’s poorest districts, in short chapters. Real examples for your answers.", h: ["Agriculture", "Rural Development"] },
+      { id: "sophie", t: "Sophie’s World", a: "Jostein Gaarder", w: "A mystery novel that quietly teaches you the history of Western philosophy.", h: ["Ethics"], bonus: true },
+      { id: "august", t: "English, August", a: "Upamanyu Chatterjee", w: "A funny, cynical novel about a young IAS officer’s first posting. Know the cynic’s view before you’re asked why you want the job.", h: ["Interview"], bonus: true }
+    ],
+    routine: [
+      { id: "r2a", t: "One editorial a day in your newspaper." },
+      { id: "r2b", t: "Down To Earth magazine, every two weeks, for environment and rural India." }
+    ]
+  },
+  {
+    n: 3, name: "Serious reader", when: "September 2027 to January 2028",
+    goal: "India in depth. The books get longer, so keep two going at once: one heavy, one light.",
+    books: [
+      { id: "anarchy", t: "The Anarchy", a: "William Dalrymple", w: "How a trading company with a private army took over a subcontinent.", h: ["Modern History"] },
+      { id: "sevenrivers", t: "Land of the Seven Rivers", a: "Sanjeev Sanyal", w: "India’s history told through its geography: rivers, coasts and the routes people travelled.", h: ["Ancient History", "Geography"] },
+      { id: "guha", t: "India After Gandhi", a: "Ramachandra Guha", w: "The story of the Republic since 1947. Long, so give it two or three months alongside lighter books.", h: ["Post-independence India", "Polity"] },
+      { id: "sixteen", t: "Sixteen Stormy Days", a: "Tripurdaman Singh", w: "The 1951 fight over the First Amendment and what it did to free speech in India.", h: ["Polity"] },
+      { id: "halflion", t: "Half-Lion", a: "Vinay Sitapati", w: "How P.V. Narasimha Rao pushed through the 1991 reforms while running a minority government.", h: ["Economy", "Polity"] },
+      { id: "ambedkar", t: "Annihilation of Caste", a: "B.R. Ambedkar", w: "A short, fierce speech that was never delivered. Essential for any question on social justice.", h: ["Society", "Ethics"] },
+      { id: "derangement", t: "The Great Derangement", a: "Amitav Ghosh", w: "Why humans find climate change so hard to think about. Short, and one of the best things written on it from India.", h: ["Environment", "Essay"] },
+      { id: "raag", t: "Raag Darbari", a: "Shrilal Shukla", w: "A satire on a north Indian village and its petty power games. Read the Hindi original or the English translation.", h: ["Governance", "Society"] },
+      { id: "inglorious", t: "Inglorious Empire", a: "Shashi Tharoor", w: "A strongly argued case on what colonial rule cost India. Know the counter-arguments too.", h: ["Modern History", "Essay"], bonus: true },
+      { id: "vpmenon", t: "The Integration of the Indian States", a: "V.P. Menon", w: "A first-hand account of how over 500 princely states joined India, by Sardar Patel’s right-hand man.", h: ["Modern History", "Polity"], bonus: true },
+      { id: "nationsfail", t: "Why Nations Fail", a: "Daron Acemoglu and James Robinson", w: "Why some countries grow rich and others don’t. Their answer: institutions.", h: ["Economy", "Essay"], bonus: true },
+      { id: "joothan", t: "Joothan", a: "Omprakash Valmiki", w: "A Dalit writer’s memoir of growing up under untouchability. Short and hard to forget.", h: ["Society", "Ethics"], bonus: true },
+      { id: "godan", t: "Godan", a: "Premchand", w: "A peasant’s lifelong wish to own a cow. Still the clearest picture of rural debt in Indian fiction. In English as The Gift of a Cow.", h: ["Agriculture", "Society"], bonus: true }
+    ],
+    routine: [
+      { id: "r3a", t: "Editorials in both The Hindu and The Indian Express. When they disagree, write down both sides." },
+      { id: "r3b", t: "Mint for economy news, and PRS Legislative Research for any big bill in the headlines." },
+      { id: "r3c", t: "One long podcast a week on your commute: Amit Varma’s The Seen and the Unseen, or Takshashila’s All Things Policy." }
+    ]
+  },
+  {
+    n: 4, name: "Exam year, light mode", when: "February to September 2028",
+    goal: "Standard books and tests come first now. Fifteen minutes before bed, nothing heavier. Pause completely in the month before Prelims and during Mains.",
+    books: [
+      { id: "sandel", t: "Justice: What’s the Right Thing to Do?", a: "Michael Sandel", w: "Harvard’s famous lecture course as a book. Every chapter is an ethics case study in disguise.", h: ["Ethics", "Essay"] },
+      { id: "gandhi", t: "The Story of My Experiments with Truth", a: "M.K. Gandhi", w: "Short chapters, honest about his own failures. Read one a night.", h: ["Ethics", "Modern History"] },
+      { id: "meditations", t: "Meditations", a: "Marcus Aurelius", w: "A Roman emperor’s private notes on duty and staying calm. One page a night through the hardest months.", h: ["Ethics", "Essay"] },
+      { id: "oldman", t: "The Old Man and the Sea", a: "Ernest Hemingway", w: "About 100 pages on refusing to give up. For the week after a bad mock test.", h: ["Essay"], bonus: true },
+      { id: "gita", t: "The Bhagavad Gita", a: "translated by Eknath Easwaran", w: "Duty, action and detachment, in a clear modern translation.", h: ["Ethics"], bonus: true }
+    ],
+    routine: [
+      { id: "r4a", t: "Newspaper only, quicker now: short notes in your own words, nothing copied." },
+      { id: "r4b", t: "Before Mains, turn your notebook into a list of examples for Essay and Ethics." }
+    ]
+  },
+  {
+    n: 5, name: "Interview mode", when: "October 2028 until your interview",
+    goal: "How India is governed, how it sees the world, and the questions that will be about you. Read with a pen: for every book, know one argument for and one against.",
+    books: [
+      { id: "steelframe", t: "The Steel Frame: A History of the IAS", a: "Deepak Gupta", w: "The service’s story by a former UPSC chairman. You will be asked why you want to join it.", h: ["Interview"] },
+      { id: "despite", t: "Despite the State", a: "M. Rajshekhar", w: "Reporting from several states on why government so often fails to deliver, and what works when it doesn’t.", h: ["Governance", "Federalism"] },
+      { id: "choices", t: "Choices: Inside the Making of India’s Foreign Policy", a: "Shivshankar Menon", w: "Five hard decisions explained by a former National Security Adviser who was in the room.", h: ["International Relations"] },
+      { id: "indiaway", t: "The India Way", a: "S. Jaishankar", w: "India’s strategy for an uncertain world, written by the External Affairs Minister while in office. Read it after Choices to compare two insiders.", h: ["International Relations"] },
+      { id: "mould", t: "Breaking the Mould", a: "Raghuram Rajan and Rohit Lamba", w: "Argues India should bet on services and skills more than factories. Know the manufacturing-first counter-argument too.", h: ["Economy", "Interview"] },
+      { id: "chipwar", t: "Chip War", a: "Chris Miller", w: "The global fight over semiconductors, and why every country, India included, wants a seat at the table.", h: ["Science and Tech", "International Relations"] },
+      { id: "haidt", t: "The Righteous Mind", a: "Jonathan Haidt", w: "Why good people disagree about politics. Helps you stay balanced when a board member pushes back.", h: ["Interview", "Ethics"] },
+      { id: "homestate", t: "A good book on your home state", a: "your choice", w: "Its history, culture, economy and current problems. Boards very often start here.", h: ["Interview"] },
+      { id: "daf", t: "Deep reading on everything in your DAF", a: "your choice", w: "Your hobbies, graduation subject, hometown and any job you’ve held. One serious book or long article on each.", h: ["Interview"] },
+      { id: "longgame", t: "The Long Game", a: "Vijay Gokhale", w: "How China negotiates with India, from a former foreign secretary who sat across the table.", h: ["International Relations"], bonus: true },
+      { id: "kelkar", t: "In Service of the Republic", a: "Vijay Kelkar and Ajay Shah", w: "A toolkit for how good public policy is designed. The most demanding book on this list.", h: ["Governance", "Economy"], bonus: true },
+      { id: "rebooting", t: "Rebooting India", a: "Nandan Nilekani and Viral Shah", w: "The story of Aadhaar and what technology can and can’t do for governance.", h: ["Governance", "Science and Tech"], bonus: true },
+      { id: "bhatia", t: "The Transformative Constitution", a: "Gautam Bhatia", w: "A close reading of what the Constitution promises. Advanced, and rewarding by this stage.", h: ["Polity"], bonus: true },
+      { id: "tsr", t: "Journeys Through Babudom and Netaland", a: "T.S.R. Subramanian", w: "A former Cabinet Secretary on how bureaucrats and politicians really work together.", h: ["Interview", "Governance"], bonus: true }
+    ],
+    routine: [
+      { id: "r5a", t: "The Economist each week, for the world outside India." },
+      { id: "r5b", t: "Short briefs from ORF, Carnegie India and MP-IDSA on the big issues of the year." },
+      { id: "r5c", t: "Sansad TV debates and the Grand Tamasha podcast, to hear how policy gets argued." },
+      { id: "r5d", t: "Every day, explain one news story out loud in two minutes, giving both sides." }
+    ]
+  }
+];
+
+const MILESTONES = {
+  4: [
+    { t: "Prelims", s: "usually late May 2028" },
+    { t: "Mains", s: "usually late August or September 2028" }
+  ],
+  5: [
+    { t: "Your interview", s: "usually between January and April 2029", last: true }
+  ]
+};
+
+const LS_KEY = "reading-ladder-v1";
+const PREF_KEY = "reading-ladder-prefs-v1";
+let state = { done: {}, notes: {} };
+const els = { books: {}, routine: {}, levels: {} };
+
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) {
+      const p = JSON.parse(raw);
+      state.done = (p && p.done) || {};
+      state.notes = (p && p.notes) || {};
+    }
+  } catch (e) {}
+}
+function saveLocal() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
+}
+function loadPrefs() {
+  try { const raw = localStorage.getItem(PREF_KEY); return raw ? JSON.parse(raw) : {}; } catch (e) { return {}; }
+}
+function savePrefs(p) {
+  try { localStorage.setItem(PREF_KEY, JSON.stringify(p)); } catch (e) {}
+}
+
+function todayISO() {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return d.getFullYear() + "-" + m + "-" + day;
+}
+function fmtDate(iso) {
+  if (typeof iso !== "string") return "";
+  const parts = iso.split("-").map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) return "";
+  const d = new Date(parts[0], parts[1] - 1, parts[2]);
+  try { return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); }
+  catch (e) { return iso; }
+}
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+
+function buildBook(b) {
+  const li = el("li", "book");
+  li.dataset.id = b.id;
+  li.dataset.bonus = b.bonus ? "1" : "0";
+
+  const cb = el("input", "tick");
+  cb.type = "checkbox";
+  cb.id = "cb-" + b.id;
+  cb.setAttribute("aria-label", "Mark “" + b.t + "” as read");
+  li.appendChild(cb);
+
+  const bk = el("div", "bk");
+  const tl = el("div", "titleline");
+  const title = el("span", "title");
+  const t = el("span", "t", b.t);
+  title.appendChild(t);
+  tl.appendChild(title);
+  if (b.bonus) tl.appendChild(el("span", "bonus", "Bonus"));
+  bk.appendChild(tl);
+  bk.appendChild(el("p", "author", b.a));
+  bk.appendChild(el("p", "why", b.w));
+  bk.appendChild(el("p", "helps", "Useful for " + b.h.join(", ")));
+
+  const meta = el("div", "meta");
+  const fin = el("span", "fin");
+  const note = el("details", "note");
+  const sum = el("summary", null, "Add a note");
+  const ta = el("textarea");
+  ta.placeholder = "One line worth remembering: a fact, a story or a quote.";
+  ta.setAttribute("aria-label", "Your note on “" + b.t + "”");
+  note.appendChild(sum);
+  note.appendChild(ta);
+  meta.appendChild(fin);
+  meta.appendChild(note);
+  bk.appendChild(meta);
+  li.appendChild(bk);
+
+  cb.addEventListener("change", () => {
+    state.done[b.id] = cb.checked ? todayISO() : null;
+    refresh();
+    persist();
+  });
+
+  let timer = null;
+  ta.addEventListener("input", () => {
+    state.notes[b.id] = ta.value;
+    saveLocal();
+    sum.textContent = ta.value.trim() ? "Your note" : "Add a note";
+    clearTimeout(timer);
+    timer = setTimeout(() => { timer = null; persist(); }, 1000);
+  });
+  ta.addEventListener("blur", () => {
+    if (timer) { clearTimeout(timer); timer = null; persist(); }
+  });
+
+  els.books[b.id] = { li, cb, fin, sum, ta, note, bonus: !!b.bonus };
+  return li;
+}
+
+function buildRoutine(r) {
+  const li = el("li");
+  const cb = el("input", "tick");
+  cb.type = "checkbox";
+  cb.id = "cb-" + r.id;
+  const lab = el("label");
+  lab.htmlFor = cb.id;
+  lab.appendChild(document.createTextNode(r.t));
+  const fin = el("span", "fin");
+  lab.appendChild(fin);
+  li.appendChild(cb);
+  li.appendChild(lab);
+  cb.addEventListener("change", () => {
+    state.done[r.id] = cb.checked ? todayISO() : null;
+    refresh();
+    persist();
+  });
+  els.routine[r.id] = { li, cb, fin };
+  return li;
+}
+
+function build() {
+  const main = document.getElementById("ladder");
+  LEVELS.forEach(L => {
+    const sec = el("section", "level");
+    sec.id = "level-" + L.n;
+    const spine = el("div", "spine");
+    const num = el("div", "num", String(L.n));
+    num.setAttribute("aria-hidden", "true");
+    spine.appendChild(num);
+    sec.appendChild(spine);
+
+    const body = el("div", "body");
+    body.appendChild(el("p", "here", "You’re on this level"));
+    const h2 = el("h2", null, "Level " + L.n + ": " + L.name);
+    body.appendChild(h2);
+    body.appendChild(el("p", "when", L.when));
+    body.appendChild(el("p", "goal", L.goal));
+    const lp = el("p", "lvl-progress");
+    body.appendChild(lp);
+
+    const ul = el("ul", "books");
+    L.books.forEach(b => ul.appendChild(buildBook(b)));
+    body.appendChild(ul);
+
+    const rt = el("div", "routine");
+    rt.appendChild(el("h3", null, "Add to your daily reading"));
+    const rul = el("ul");
+    L.routine.forEach(r => rul.appendChild(buildRoutine(r)));
+    rt.appendChild(rul);
+    body.appendChild(rt);
+
+    sec.appendChild(body);
+    main.appendChild(sec);
+    els.levels[L.n] = { sec, lp, core: L.books.filter(b => !b.bonus).map(b => b.id) };
+
+    (MILESTONES[L.n] || []).forEach(m => {
+      const ms = el("div", "milestone" + (m.last ? " last" : ""));
+      const sp = el("div", "spine");
+      sp.appendChild(el("span", "diamond"));
+      ms.appendChild(sp);
+      const mb = el("div", "body");
+      const p = el("p");
+      p.appendChild(el("strong", null, m.t));
+      p.appendChild(document.createElement("br"));
+      p.appendChild(el("span", "sub", m.s));
+      mb.appendChild(p);
+      ms.appendChild(mb);
+      main.appendChild(ms);
+    });
+  });
+}
+
+function refresh() {
+  Object.keys(els.books).forEach(id => {
+    const x = els.books[id];
+    const d = state.done[id];
+    const done = !!d;
+    x.li.classList.toggle("done", done);
+    x.cb.checked = done;
+    x.fin.textContent = done ? (fmtDate(d) ? "Finished " + fmtDate(d) : "Finished") : "";
+    const nv = state.notes[id] || "";
+    if (document.activeElement !== x.ta && x.ta.value !== nv) x.ta.value = nv;
+    if (document.activeElement !== x.ta) x.sum.textContent = nv.trim() ? "Your note" : "Add a note";
+    x.note.hidden = mode === "github" && !nv.trim();
+  });
+  Object.keys(els.routine).forEach(id => {
+    const x = els.routine[id];
+    const d = state.done[id];
+    const done = !!d;
+    x.li.classList.toggle("done", done);
+    x.cb.checked = done;
+    x.fin.textContent = done ? (fmtDate(d) ? "Started " + fmtDate(d) : "Started") : "";
+  });
+
+  let totalCore = 0, doneCore = 0, current = null;
+  LEVELS.forEach(L => {
+    const lv = els.levels[L.n];
+    const c = lv.core.length;
+    const dc = lv.core.filter(id => !!state.done[id]).length;
+    totalCore += c; doneCore += dc;
+    lv.lp.textContent = dc + " of " + c + " core books read";
+    const allDone = dc === c;
+    lv.sec.classList.toggle("done", allDone);
+    if (!allDone && current === null) current = L;
+  });
+  LEVELS.forEach(L => els.levels[L.n].sec.classList.toggle("current", current !== null && current.n === L.n));
+
+  document.getElementById("overall-count").textContent = doneCore + " of " + totalCore;
+  document.getElementById("overall-bar").style.width = (totalCore ? (doneCore / totalCore) * 100 : 0) + "%";
+  document.getElementById("where").textContent = current
+    ? "You’re on level " + current.n + ": " + current.name
+    : "Every level done. Walk in with confidence.";
+}
+
+
+/* Progress source: README.md on GitHub, or this browser */
+let mode = "local";
+
+function persist() { if (mode === "local") saveLocal(); }
+
+function ghInfo() {
+  const m = location.hostname.match(/^([a-z0-9-]+)\.github\.io$/i);
+  if (!m) return null;
+  const user = m[1];
+  const seg = location.pathname.split("/").filter(Boolean)[0];
+  const repo = seg && !/\.html?$/i.test(seg) ? seg : user + ".github.io";
+  return { user, repo };
+}
+
+async function fetchRepoFile(name) {
+  const urls = [name];
+  const gh = ghInfo();
+  if (gh) urls.push("https://raw.githubusercontent.com/" + gh.user + "/" + gh.repo + "/main/" + name);
+  for (const u of urls) {
+    try {
+      const r = await fetch(u + "?t=" + Date.now(), { cache: "no-store" });
+      if (r.ok) return await r.text();
+    } catch (e) {}
+  }
+  return null;
+}
+
+async function fetchReadme() {
+  const text = await fetchRepoFile("README.md");
+  return text && text.includes("<!-- progress:start -->") ? text : null;
+}
+
+function parseReadme(text) {
+  const done = {}, notes = {};
+  let cur = null;
+  text.split(/\r?\n/).forEach(line => {
+    const m = line.match(/^\s*[-*]\s+\[([ xX])\]\s+(.*?)<!--\s*([\w-]+)\s*-->/);
+    if (m) {
+      cur = m[3];
+      if (m[1].toLowerCase() === "x") {
+        const d = line.match(/\b(20\d\d-\d\d-\d\d)\b/);
+        done[cur] = d ? d[1] : true;
+      } else {
+        done[cur] = null;
+      }
+      return;
+    }
+    const n = line.match(/^\s{2,}[-*]\s+Note:\s*(.+)$/i);
+    if (n && cur) {
+      notes[cur] = (notes[cur] ? notes[cur] + "\n" : "") + n[1].trim();
+      return;
+    }
+    if (/^\S/.test(line)) cur = null;
+  });
+  return { done, notes };
+}
+
+function enterGitHubMode(parsed) {
+  mode = "github";
+  state = parsed;
+  document.body.classList.add("gh");
+  document.querySelectorAll(".tick").forEach(cb => {
+    cb.disabled = true;
+    cb.title = "Tick this in README.md on GitHub";
+  });
+  document.querySelectorAll(".note textarea").forEach(ta => { ta.readOnly = true; });
+  const s = document.getElementById("sync");
+  s.textContent = "Progress from README.md on GitHub";
+  const gh = ghInfo();
+  const link = document.getElementById("edit-link");
+  if (gh) {
+    link.href = "https://github.com/" + gh.user + "/" + gh.repo + "/edit/main/README.md";
+    link.hidden = false;
+  }
+  refresh();
+}
+
+/* Start */
+loadLocal();
+build();
+const prefs = loadPrefs();
+const bonusToggle = document.getElementById("show-bonus");
+bonusToggle.checked = prefs.showBonus !== false;
+document.body.classList.toggle("hide-bonus", !bonusToggle.checked);
+bonusToggle.addEventListener("change", () => {
+  document.body.classList.toggle("hide-bonus", !bonusToggle.checked);
+  savePrefs({ showBonus: bonusToggle.checked });
+});
+refresh();
+
+/* Password gate */
+const UNLOCK_KEY = "reading-ladder-unlock-v1";
+const ITERATIONS = 150000;
+const CODE_RE = /^pbkdf2\$\d+\$[0-9a-f]{32}\$[0-9a-f]{64}$/;
+const toHex = buf => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+const fromHex = h => new Uint8Array(h.match(/../g).map(x => parseInt(x, 16)));
+
+async function derive(pw, salt, iterations) {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations }, key, 256);
+  return toHex(bits);
+}
+async function makeCode(pw) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  return "pbkdf2$" + ITERATIONS + "$" + toHex(salt) + "$" + await derive(pw, salt, ITERATIONS);
+}
+async function matches(pw, code) {
+  const p = code.split("$");
+  return (await derive(pw, fromHex(p[2]), parseInt(p[1], 10))) === p[3];
+}
+
+const $ = id => document.getElementById(id);
+let opened = false;
+
+function openLadder() {
+  if (opened) return;
+  opened = true;
+  document.documentElement.classList.remove("locked");
+  fetchReadme().then(text => { if (text) enterGitHubMode(parseReadme(text)); });
+}
+
+function showUnlock(code) {
+  $("unlock-form").hidden = false;
+  $("pw").focus();
+  $("unlock-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    $("pw-err").textContent = "";
+    const btn = e.submitter || $("unlock-form").querySelector("button");
+    btn.disabled = true;
+    try {
+      if (await matches($("pw").value, code)) {
+        if ($("remember").checked) { try { localStorage.setItem(UNLOCK_KEY, code); } catch (err) {} }
+        $("lock-btn").hidden = false;
+        openLadder();
+      } else {
+        $("pw-err").textContent = "That password didn’t match. Try again.";
+        $("pw").select();
+      }
+    } finally { btn.disabled = false; }
+  });
+}
+
+function showSetup() {
+  $("setup-form").hidden = false;
+  const gh = ghInfo();
+  const link = $("hash-edit-link");
+  if (gh) link.href = "https://github.com/" + gh.user + "/" + gh.repo + "/edit/main/password-hash.txt";
+  else link.removeAttribute("href");
+  $("setup-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    $("setup-err").textContent = "";
+    if ($("pw1").value !== $("pw2").value) {
+      $("setup-err").textContent = "The two passwords are different. Type them again.";
+      return;
+    }
+    const code = await makeCode($("pw1").value);
+    $("hash-out").textContent = code;
+    $("setup-form").hidden = true;
+    $("setup-done").hidden = false;
+  });
+  $("copy-hash").addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText($("hash-out").textContent);
+      $("copy-hash").textContent = "Copied";
+    } catch (err) {
+      const r = document.createRange();
+      r.selectNodeContents($("hash-out"));
+      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      $("copy-hash").textContent = "Selected, press Ctrl+C or Cmd+C";
+    }
+  });
+}
+
+$("lock-btn").addEventListener("click", () => {
+  try { localStorage.removeItem(UNLOCK_KEY); } catch (e) {}
+  location.reload();
+});
+
+(async () => {
+  const code = ((await fetchRepoFile("password-hash.txt")) || "").trim();
+  $("gate-loading").hidden = true;
+  if (!window.crypto || !crypto.subtle) {
+    $("gate-loading").hidden = false;
+    $("gate-loading").textContent = "This page needs to be opened over https, like your github.io link.";
+    return;
+  }
+  if (!CODE_RE.test(code)) { showSetup(); return; }
+  let saved = null;
+  try { saved = localStorage.getItem(UNLOCK_KEY); } catch (e) {}
+  if (saved === code) { $("lock-btn").hidden = false; openLadder(); }
+  else showUnlock(code);
+})();
+</script>
+</body>
+</html>
